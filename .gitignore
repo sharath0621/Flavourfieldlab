@@ -1,0 +1,14 @@
+node_modules
+.next
+.env
+.env.local
+*.tsbuildinfo
+.DS_Store
+
+# Artifacts that live alongside the app in this folder but aren't part of the
+# deployable Next.js project — the standalone HTML prototype, the packaged
+# zip, and the setup checklist.
+flavour-field-lab-app.zip
+flavour-field-lab.html
+flavour-field-lab-setup-checklist.md
+flavour-field-lab-go-live-guide.md
