@@ -1,16 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getUserOrThrow } from '@/lib/supabase/auth';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getPublicResearcher } from '@/lib/supabase/auth';
 import { AIService } from '@/lib/ai/service';
 import type { AIAnalysis } from '@/lib/ai/schema';
 import type { BacklogStatus, FieldNote, FieldNoteDraft, QuestionStatus } from '@/lib/types';
 
 /** Find-or-create the canonical Ingredient row for a given name/category (spec §21). */
 async function resolveIngredient(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createAdminClient>,
   name: string,
   category: string
 ): Promise<string | null> {
@@ -34,7 +33,7 @@ async function resolveIngredient(
 
 /** Persists one AIAnalysis result's rows against a field note. Does not touch raw_text. */
 async function persistAnalysis(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createAdminClient>,
   fieldNoteId: string,
   analysis: AIAnalysis,
   preserve?: { backlogByTitle: Map<string, BacklogStatus>; questionStatusByText: Map<string, QuestionStatus> }
@@ -118,8 +117,8 @@ async function persistAnalysis(
  * exactly as typed, and the detail page offers "Regenerate analysis".
  */
 export async function createFieldNote(draft: FieldNoteDraft): Promise<{ id: string; analysisError: string | null }> {
-  const user = await getUserOrThrow();
-  const supabase = createClient();
+  const researcher = await getPublicResearcher();
+  const supabase = createAdminClient();
 
   const ingredientId = await resolveIngredient(supabase, draft.ingredientName, draft.ingredientCategory);
 
@@ -128,8 +127,8 @@ export async function createFieldNote(draft: FieldNoteDraft): Promise<{ id: stri
     .insert({
       title: draft.title,
       date: draft.date,
-      researcher_id: user.id,
-      researcher_name: draft.researcherName || user.email,
+      researcher_id: researcher.id,
+      researcher_name: draft.researcherName || researcher.email,
       state: draft.state,
       district: draft.district,
       gps: draft.gps || null,
@@ -228,8 +227,8 @@ function noteToDraft(note: FieldNote): FieldNoteDraft {
  * interactive prototype this app is based on).
  */
 export async function regenerateAnalysis(fieldNoteId: string): Promise<{ analysisError: string | null }> {
-  await getUserOrThrow();
-  const supabase = createClient();
+  await getPublicResearcher();
+  const supabase = createAdminClient();
 
   const { data: note, error } = await supabase.from('field_notes').select('*').eq('id', fieldNoteId).single();
   if (error || !note) throw new Error('Field note not found.');
@@ -273,24 +272,24 @@ export async function regenerateAnalysis(fieldNoteId: string): Promise<{ analysi
 }
 
 export async function updateResearchQuestionStatus(questionId: string, status: QuestionStatus, fieldNoteId: string) {
-  await getUserOrThrow();
-  const supabase = createClient();
+  await getPublicResearcher();
+  const supabase = createAdminClient();
   await supabase.from('research_questions').update({ status }).eq('id', questionId);
   revalidatePath(`/field-notes/${fieldNoteId}`);
   revalidatePath('/research');
 }
 
 export async function saveOpportunityToBacklog(opportunityId: string, fieldNoteId: string) {
-  await getUserOrThrow();
-  const supabase = createClient();
+  await getPublicResearcher();
+  const supabase = createAdminClient();
   await supabase.from('rd_opportunities').update({ backlog_status: 'Captured' }).eq('id', opportunityId);
   revalidatePath(`/field-notes/${fieldNoteId}`);
   revalidatePath('/rd');
 }
 
 export async function saveAllOpportunitiesToBacklog(fieldNoteId: string) {
-  await getUserOrThrow();
-  const supabase = createClient();
+  await getPublicResearcher();
+  const supabase = createAdminClient();
   await supabase
     .from('rd_opportunities')
     .update({ backlog_status: 'Captured' })
@@ -301,15 +300,15 @@ export async function saveAllOpportunitiesToBacklog(fieldNoteId: string) {
 }
 
 export async function updateBacklogStatus(opportunityId: string, status: BacklogStatus, fieldNoteId: string) {
-  await getUserOrThrow();
-  const supabase = createClient();
+  await getPublicResearcher();
+  const supabase = createAdminClient();
   await supabase.from('rd_opportunities').update({ backlog_status: status }).eq('id', opportunityId);
   revalidatePath('/rd');
   revalidatePath(`/field-notes/${fieldNoteId}`);
 }
 
-export async function signOut() {
-  const supabase = createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
-}
+// No signOut action: this deployment runs in public access mode with no
+// sign-in step (see lib/supabase/auth.ts). Likewise, there is deliberately no
+// "delete field note" action — the only rows any action removes are a single
+// note's derived AI outputs inside regenerateAnalysis, which immediately
+// rebuilds them and never touches field_notes.raw_text.

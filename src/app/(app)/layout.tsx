@@ -1,12 +1,11 @@
-import { getUserOrRedirect } from '@/lib/supabase/auth';
 import { Sidebar } from '@/components/nav/sidebar';
 import { Topbar } from '@/components/nav/topbar';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  await getUserOrRedirect();
-
+// Public access mode — no session guard. Anyone with the link lands straight
+// in the workspace (see lib/supabase/auth.ts for the trade-offs).
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />

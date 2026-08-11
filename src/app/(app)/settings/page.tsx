@@ -1,11 +1,8 @@
-import { getUserOrRedirect } from '@/lib/supabase/auth';
 import { getAIProviderName } from '@/lib/ai/service';
-import { signOut } from '@/app/actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SettingsPage() {
-  const user = await getUserOrRedirect();
+export default function SettingsPage() {
   const provider = getAIProviderName();
 
   return (
@@ -15,10 +12,16 @@ export default async function SettingsPage() {
       <p className="text-ink-soft mb-6">Minimal by design for this MVP — see README for what&apos;s next.</p>
 
       <div className="bg-paper border border-rule rounded px-5 py-4 mb-4">
-        <h3 className="text-xs uppercase tracking-wide font-semibold mb-3">Researcher profile</h3>
-        <Row k="Email" v={user.email || '—'} />
-        <Row k="User ID" v={user.id} />
-        <Row k="Role" v="Beverage researcher" />
+        <h3 className="text-xs uppercase tracking-wide font-semibold mb-3">Access</h3>
+        <Row k="Mode" v="Public — no sign-in required" />
+        <Row k="Who can view" v="Anyone with the link" />
+        <Row k="Who can add" v="Anyone with the link" />
+        <Row k="Deletion" v="Not available to anyone" />
+        <p className="text-[11.5px] text-ink-faint mt-2.5">
+          Everyone shares one workspace. Field notes are never deleted through the app, and a note&apos;s original
+          text can only ever be added to — regenerating analysis rebuilds the AI layer around it, leaving the raw
+          observation untouched.
+        </p>
       </div>
 
       <div className="bg-paper border border-rule rounded px-5 py-4 mb-4">
@@ -34,12 +37,6 @@ export default async function SettingsPage() {
         <Row k="File storage" v="Supabase Storage (field-note-media bucket)" />
         <Row k="Search" v="Postgres full-text search (tsvector)" />
       </div>
-
-      <form action={signOut}>
-        <button type="submit" className="text-sm text-ink-soft hover:text-ink underline">
-          Sign out
-        </button>
-      </form>
     </div>
   );
 }

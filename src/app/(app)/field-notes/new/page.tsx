@@ -1,11 +1,11 @@
-import { getUserOrRedirect } from '@/lib/supabase/auth';
 import { CaptureForm } from '@/components/field-notes/capture-form';
 
 export const dynamic = 'force-dynamic';
 
-export default async function NewFieldNotePage() {
-  const user = await getUserOrRedirect();
-  const defaultName = (user.user_metadata?.name as string) || user.email || 'Researcher';
+export default function NewFieldNotePage() {
+  // Public access mode: no session, so there's no name to prefill from. The
+  // researcher types their own name on the form instead.
+  const defaultName = '';
 
   return (
     <div>

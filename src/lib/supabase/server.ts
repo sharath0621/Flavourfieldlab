@@ -4,8 +4,13 @@ import { cookies } from 'next/headers';
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 /**
- * Server-side Supabase client for use in Server Components, Server Actions,
- * and Route Handlers. Reads the session from cookies (set by middleware.ts).
+ * Session-aware server client. CURRENTLY UNUSED — the app runs in public
+ * access mode (no sign-in), so reads and writes go through the service-role
+ * client in lib/supabase/admin.ts instead. Kept as the restore point for
+ * reintroducing auth: bring back the session refresh in middleware.ts, swap
+ * queries.ts/actions.ts back to this client, and re-add the layout guards.
+ *
+ * Reads the session from cookies (set by middleware.ts).
  */
 export function createClient() {
   const cookieStore = cookies();
